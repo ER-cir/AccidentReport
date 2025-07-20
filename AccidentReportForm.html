@@ -31,24 +31,42 @@
             padding: 0;
         }
 
+        html {
+            height: 100%;
+        }
+
         body {
             font-family: 'Prompt', sans-serif;
-            background-color: var(--background-color); /* Fallback color */
-            /* UPDATED: Pastel green-blue background pattern */
-            background-image: url("data:image/svg+xml,%3csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M-10 10l20 -20M0 40l40 -40M30 50l20 -20' stroke='%23d1e7dd' stroke-width='1'/%3e%3c/svg%3e");
+            /* UPDATED: Added a beautiful pastel gradient for more depth */
+            background: linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 100%);
             color: var(--text-color);
             line-height: 1.7;
             font-size: 16px;
+            /* UPDATED: Flexbox for sticky footer */
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        main {
+            flex-grow: 1;
         }
 
         /* --- Container & Header --- */
         .container {
-            max-width: 700px;
+            /* UPDATED: Reverted from full-width to a centered card for a 2-layer effect */
+            max-width: 960px;
             margin: 2rem auto;
-            padding: 1.5rem;
+            padding: 2.5rem;
             background-color: var(--white-color);
             border-radius: 16px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            /* UPDATED: Enhanced shadow for a more pronounced 3D/floating effect */
+            box-shadow: 0 15px 35px rgba(0, 91, 153, 0.12), 0 5px 15px rgba(0, 0, 0, 0.07);
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .container:hover {
+            transform: translateY(-5px);
         }
 
         header {
@@ -242,159 +260,174 @@
             font-family: 'Prompt', sans-serif;
         }
         
-        /* --- NEW: Footer Styling --- */
+        /* --- Footer Styling --- */
         footer {
             text-align: center;
-            margin: 2rem 1rem;
-            color: #6c757d; /* A muted gray color */
+            padding: 1.5rem;
+            color: #6c757d;
             font-size: 0.9rem;
+            background-color: transparent;
+            flex-shrink: 0;
         }
 
         /* --- Responsive for smaller screens --- */
-        @media (max-width: 600px) {
+        @media (max-width: 991px) {
             .container {
                 margin: 1rem;
-                padding: 1rem;
+                padding: 1.5rem;
             }
-            h1 { font-size: 1.8rem; }
-            h2 { font-size: 1.2rem; }
             .button-group {
                 flex-direction: column;
+            }
+        }
+        
+        /* --- Desktop Layout Adjustments --- */
+        @media (min-width: 992px) {
+            .form-row {
+                display: flex;
+                gap: 1.5rem; /* Space between columns */
+            }
+
+            .form-row .form-group {
+                flex: 1; /* Make columns in a row equal width */
             }
         }
     </style>
 </head>
 <body>
+    <main>
+        <div class="container">
+            <header>
+                <img src="https://i.postimg.cc/vHcRLT5g/image.png" alt="โลโก้" class="header-logo">
+                <h1>แบบฟอร์มรายงานอุบัติเหตุจราจร</h1>
+                <h2>ปภ.3 / ปภ.4</h2>
+            </header>
 
-    <div class="container">
-        <header>
-            <img src="https://i.postimg.cc/vHcRLT5g/image.png" alt="โลโก้" class="header-logo">
-            <h1>แบบฟอร์มรายงานอุบัติเหตุจราจร</h1>
-            <h2>ปภ.3 / ปภ.4</h2>
-        </header>
+            <form id="accident-form">
+                <!-- Wrapped in form-row for desktop layout -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="incident-date">วันที่เกิดเหตุ:</label>
+                        <input type="date" id="incident-date" name="incident_date" required>
+                    </div>
 
-        <form id="accident-form">
-            <!-- Date and Time -->
-            <div class="form-group">
-                <label for="incident-date">วันที่เกิดเหตุ:</label>
-                <input type="date" id="incident-date" name="incident_date" required>
-            </div>
-
-            <div class="form-group">
-                <label for="incident-time">เวลา:</label>
-                <input type="time" id="incident-time" name="incident_time" required>
-            </div>
-
-            <!-- Shift -->
-            <div class="form-group">
-                <label class="label-header">เวร:</label>
-                <div class="button-select-group" id="shift-group">
-                    <button type="button" class="select-btn" data-value="เช้า">เช้า</button>
-                    <button type="button" class="select-btn" data-value="บ่าย">บ่าย</button>
-                    <button type="button" class="select-btn" data-value="ดึก">ดึก</button>
+                    <div class="form-group">
+                        <label for="incident-time">เวลา:</label>
+                        <input type="time" id="incident-time" name="incident_time" required>
+                    </div>
                 </div>
-                <input type="hidden" name="shift" id="shift-value" required>
-            </div>
 
-            <!-- Victim Information -->
-            <div class="form-group">
-                <label for="victim-name">ชื่อ-สกุล ผู้ประสบเหตุ:</label>
-                <input type="text" id="victim-name" name="victim_name" placeholder="กรอกชื่อ-นามสกุล" required>
-            </div>
-
-            <div class="form-group">
-                <label for="victim-age">อายุ (ปี):</label>
-                <input type="number" id="victim-age" name="victim_age" placeholder="กรอกอายุเป็นตัวเลข" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="national-id">เลขบัตรประชาชน:</label>
-                <input type="text" id="national-id" name="national_id" placeholder="กรอกเลข 13 หลัก" pattern="\d{13}" title="กรุณากรอกเลขบัตรประชาชน 13 หลัก">
-            </div>
-
-            <div class="form-group">
-                <label for="address">ที่อยู่:</label>
-                <textarea id="address" name="address" rows="3" placeholder="กรอกที่อยู่ปัจจุบัน"></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="location">สถานที่เกิดเหตุ:</label>
-                <input type="text" id="location" name="location" placeholder="ระบุสถานที่ให้ชัดเจน เช่น หน้าตลาดสด, กม.ที่ 5" required>
-            </div>
-
-            <!-- Victim's Vehicle -->
-            <div class="form-group">
-                <label class="label-header">พาหนะผู้บาดเจ็บ:</label>
-                <div class="button-select-group" id="victim-vehicle-group">
-                    <button type="button" class="select-btn" data-value="คนเดินเท้า">คนเดินเท้า</button>
-                    <button type="button" class="select-btn" data-value="ขับขี่ จยย.">ขับขี่ จยย.</button>
-                    <button type="button" class="select-btn" data-value="ซ้อน จยย.">ซ้อน จยย.</button>
-                    <button type="button" class="select-btn" data-value="ขับขี่ จักรยาน">ขับขี่ จักรยาน</button>
-                    <button type="button" class="select-btn" data-value="ซ้อน จักรยาน">ซ้อน จักรยาน</button>
-                    <button type="button" class="select-btn" data-value="ขับรถยนต์">ขับรถยนต์</button>
-                    <button type="button" class="select-btn" data-value="โดยสารรถยนต์">โดยสารรถยนต์</button>
-                    <button type="button" class="select-btn" data-value="ขับรถบรรทุก">ขับรถบรรทุก</button>
-                    <button type="button" class="select-btn" data-value="โดยสารรถบรรทุก">โดยสารรถบรรทุก</button>
-                    <button type="button" class="select-btn" data-value="อื่นๆ">อื่นๆ ระบุ...</button>
+                <!-- Shift -->
+                <div class="form-group">
+                    <label class="label-header">เวร:</label>
+                    <div class="button-select-group" id="shift-group">
+                        <button type="button" class="select-btn" data-value="เช้า">เช้า</button>
+                        <button type="button" class="select-btn" data-value="บ่าย">บ่าย</button>
+                        <button type="button" class="select-btn" data-value="ดึก">ดึก</button>
+                    </div>
+                    <input type="hidden" name="shift" id="shift-value" required>
                 </div>
-                <input type="hidden" name="victim_vehicle" id="victim-vehicle-value" required>
-                <input type="text" id="victim-vehicle-other-text" name="victim_vehicle_other_text" class="other-text-input" placeholder="โปรดระบุพาหนะ">
-            </div>
 
-            <!-- Other Party's Vehicle -->
-            <div class="form-group">
-                <label class="label-header">พาหนะคู่กรณี:</label>
-                <div class="button-select-group" id="other-party-vehicle-group">
-                    <button type="button" class="select-btn" data-value="ไม่มี">ไม่มี</button>
-                    <button type="button" class="select-btn" data-value="คนเดินเท้า">คนเดินเท้า</button>
-                    <button type="button" class="select-btn" data-value="จยย.">จยย.</button>
-                    <button type="button" class="select-btn" data-value="จักรยาน">จักรยาน</button>
-                    <button type="button" class="select-btn" data-value="รถยนต์">รถยนต์</button>
-                    <button type="button" class="select-btn" data-value="รถบรรทุก">รถบรรทุก</button>
-                    <button type="button" class="select-btn" data-value="อื่นๆ">อื่นๆ ระบุ...</button>
+                <!-- Wrapped in form-row for desktop layout -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="victim-name">ชื่อ-สกุล ผู้ประสบเหตุ:</label>
+                        <input type="text" id="victim-name" name="victim_name" placeholder="กรอกชื่อ-นามสกุล" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="victim-age">อายุ (ปี):</label>
+                        <input type="number" id="victim-age" name="victim_age" placeholder="กรอกอายุเป็นตัวเลข" required>
+                    </div>
                 </div>
-                <input type="hidden" name="other_party_vehicle" id="other-party-vehicle-value" required>
-                <input type="text" id="other-party-vehicle-other-text" name="other_party_vehicle_other_text" class="other-text-input" placeholder="โปรดระบุพาหนะคู่กรณี">
-            </div>
-
-            <!-- Treatment Result -->
-            <div class="form-group">
-                <label class="label-header">ผลการรักษา:</label>
-                <div class="button-select-group" id="treatment-result-group">
-                    <button type="button" class="select-btn" data-value="Admit">Admit</button>
-                    <button type="button" class="select-btn" data-value="ส่งต่อ">ส่งต่อ</button>
-                    <button type="button" class="select-btn" data-value="เสียชีวิต">เสียชีวิต</button>
-                    <button type="button" class="select-btn" data-value="กลับบ้าน">กลับบ้าน</button>
-                    <!-- UPDATED: Added "Other" option -->
-                    <button type="button" class="select-btn" data-value="อื่นๆ">อื่นๆ ระบุ...</button>
+                
+                <div class="form-group">
+                    <label for="national-id">เลขบัตรประชาชน:</label>
+                    <input type="text" id="national-id" name="national_id" placeholder="กรอกเลข 13 หลัก" pattern="\d{13}" title="กรุณากรอกเลขบัตรประชาชน 13 หลัก">
                 </div>
-                <input type="hidden" name="treatment_result" id="treatment-result-value" required>
-                <!-- UPDATED: Added text input for "Other" treatment -->
-                <input type="text" id="treatment-result-other-text" name="treatment_result_other_text" class="other-text-input" placeholder="โปรดระบุผลการรักษา">
-            </div>
 
-            <!-- Reporter and Remarks -->
-            <div class="form-group">
-                <label for="reporter-name">ผู้รายงาน:</label>
-                <input type="text" id="reporter-name" name="reporter_name" placeholder="กรอกชื่อผู้รายงาน" required>
-            </div>
+                <div class="form-group">
+                    <label for="address">ที่อยู่:</label>
+                    <textarea id="address" name="address" rows="3" placeholder="กรอกที่อยู่ปัจจุบัน"></textarea>
+                </div>
 
-            <div class="form-group">
-                <label for="remarks">หมายเหตุ:</label>
-                <textarea id="remarks" name="remarks" rows="3" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
-            </div>
+                <div class="form-group">
+                    <label for="location">สถานที่เกิดเหตุ:</label>
+                    <input type="text" id="location" name="location" placeholder="ระบุสถานที่ให้ชัดเจน เช่น หน้าตลาดสด, กม.ที่ 5" required>
+                </div>
 
-            <!-- Action Buttons -->
-            <div class="no-incident-group">
-                <button type="button" id="no-incident-btn" class="btn btn-no-incident">รายงาน ไม่มีเหตุในเวร</button>
-            </div>
-            <div class="button-group">
-                <button type="submit" class="btn btn-submit">ส่งข้อมูล</button>
-                <button type="reset" class="btn btn-reset">ล้างข้อมูล</button>
-            </div>
+                <!-- Victim's Vehicle -->
+                <div class="form-group">
+                    <label class="label-header">พาหนะผู้บาดเจ็บ:</label>
+                    <div class="button-select-group" id="victim-vehicle-group">
+                        <button type="button" class="select-btn" data-value="คนเดินเท้า">คนเดินเท้า</button>
+                        <button type="button" class="select-btn" data-value="ขับขี่ จยย.">ขับขี่ จยย.</button>
+                        <button type="button" class="select-btn" data-value="ซ้อน จยย.">ซ้อน จยย.</button>
+                        <button type="button" class="select-btn" data-value="ขับขี่ จักรยาน">ขับขี่ จักรยาน</button>
+                        <button type="button" class="select-btn" data-value="ซ้อน จักรยาน">ซ้อน จักรยาน</button>
+                        <button type="button" class="select-btn" data-value="ขับรถยนต์">ขับรถยนต์</button>
+                        <button type="button" class="select-btn" data-value="โดยสารรถยนต์">โดยสารรถยนต์</button>
+                        <button type="button" class="select-btn" data-value="ขับรถบรรทุก">ขับรถบรรทุก</button>
+                        <button type="button" class="select-btn" data-value="โดยสารรถบรรทุก">โดยสารรถบรรทุก</button>
+                        <button type="button" class="select-btn" data-value="อื่นๆ">อื่นๆ ระบุ...</button>
+                    </div>
+                    <input type="hidden" name="victim_vehicle" id="victim-vehicle-value" required>
+                    <input type="text" id="victim-vehicle-other-text" name="victim_vehicle_other_text" class="other-text-input" placeholder="โปรดระบุพาหนะ">
+                </div>
 
-        </form>
-    </div>
+                <!-- Other Party's Vehicle -->
+                <div class="form-group">
+                    <label class="label-header">พาหนะคู่กรณี:</label>
+                    <div class="button-select-group" id="other-party-vehicle-group">
+                        <button type="button" class="select-btn" data-value="ไม่มี">ไม่มี</button>
+                        <button type="button" class="select-btn" data-value="คนเดินเท้า">คนเดินเท้า</button>
+                        <button type="button" class="select-btn" data-value="จยย.">จยย.</button>
+                        <button type="button" class="select-btn" data-value="จักรยาน">จักรยาน</button>
+                        <button type="button" class="select-btn" data-value="รถยนต์">รถยนต์</button>
+                        <button type="button" class="select-btn" data-value="รถบรรทุก">รถบรรทุก</button>
+                        <button type="button" class="select-btn" data-value="อื่นๆ">อื่นๆ ระบุ...</button>
+                    </div>
+                    <input type="hidden" name="other_party_vehicle" id="other-party-vehicle-value" required>
+                    <input type="text" id="other-party-vehicle-other-text" name="other_party_vehicle_other_text" class="other-text-input" placeholder="โปรดระบุพาหนะคู่กรณี">
+                </div>
+
+                <!-- Treatment Result -->
+                <div class="form-group">
+                    <label class="label-header">ผลการรักษา:</label>
+                    <div class="button-select-group" id="treatment-result-group">
+                        <button type="button" class="select-btn" data-value="Admit">Admit</button>
+                        <button type="button" class="select-btn" data-value="ส่งต่อ">ส่งต่อ</button>
+                        <button type="button" class="select-btn" data-value="เสียชีวิต">เสียชีวิต</button>
+                        <button type="button" class="select-btn" data-value="กลับบ้าน">กลับบ้าน</button>
+                        <button type="button" class="select-btn" data-value="อื่นๆ">อื่นๆ ระบุ...</button>
+                    </div>
+                    <input type="hidden" name="treatment_result" id="treatment-result-value" required>
+                    <input type="text" id="treatment-result-other-text" name="treatment_result_other_text" class="other-text-input" placeholder="โปรดระบุผลการรักษา">
+                </div>
+
+                <!-- Reporter and Remarks -->
+                <div class="form-group">
+                    <label for="reporter-name">ผู้รายงาน:</label>
+                    <input type="text" id="reporter-name" name="reporter_name" placeholder="กรอกชื่อผู้รายงาน" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="remarks">หมายเหตุ:</label>
+                    <textarea id="remarks" name="remarks" rows="3" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="no-incident-group">
+                    <button type="button" id="no-incident-btn" class="btn btn-no-incident">รายงาน ไม่มีเหตุในเวร</button>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="btn btn-submit">ส่งข้อมูล</button>
+                    <button type="reset" class="btn btn-reset">ล้างข้อมูล</button>
+                </div>
+
+            </form>
+        </div>
+    </main>
 
     <!-- Custom Alert Modal -->
     <div id="custom-alert-overlay" class="custom-alert-overlay">
@@ -404,7 +437,7 @@
         </div>
     </div>
 
-    <!-- NEW: Footer Added -->
+    <!-- Footer Added -->
     <footer>
         <p>พัฒนาโดย. งานผู้ป่วยอุบัติเหตุฉุกเฉินและนิติเวช โรงพยาบาลเจาะไอร้อง</p>
     </footer>
@@ -461,7 +494,6 @@
             setupButtonSelect('shift-group', 'shift-value');
             setupButtonSelect('victim-vehicle-group', 'victim-vehicle-value', 'victim-vehicle-other-text');
             setupButtonSelect('other-party-vehicle-group', 'other-party-vehicle-value', 'other-party-vehicle-other-text');
-            // UPDATED: Added the new text input ID for treatment result
             setupButtonSelect('treatment-result-group', 'treatment-result-value', 'treatment-result-other-text');
 
             const form = document.getElementById('accident-form');
