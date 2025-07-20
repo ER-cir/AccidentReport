@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แบบฟอร์มรายงานอุบัติเหตุจราจร</title>
+    
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- General Setup & Color Palette --- */
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #28a745;
+            --warning-color: #ffc107;
+            --info-color: #6c757d;
+            --light-blue-bg: #e7f5ff;
+            --background-color: #f0f4f8;
+            --text-color: #333;
+            --border-color: #ced4da;
+            --white-color: #ffffff;
+            --header-color: #0056b3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--background-color); /* Fallback color */
+            /* UPDATED: Pastel green-blue background pattern */
+            background-image: url("data:image/svg+xml,%3csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M-10 10l20 -20M0 40l40 -40M30 50l20 -20' stroke='%23d1e7dd' stroke-width='1'/%3e%3c/svg%3e");
+            color: var(--text-color);
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        /* --- Container & Header --- */
+        .container {
+            max-width: 700px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: var(--white-color);
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            color: var(--header-color);
+        }
+        
+        .header-logo {
+            display: block;
+            margin: 0 auto 1.5rem auto;
+            max-width: 120px;
+            height: auto;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-weight: 400;
+            color: #6c757d;
+            font-size: 1.2rem;
+        }
+
+        /* --- Form Elements --- */
+        .form-group {
+            margin-bottom: 1.75rem;
+        }
+
+        label, .label-header {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+            color: var(--header-color);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        input[type="time"],
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: 'Prompt', sans-serif;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            background-color: #fdfdfd;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px var(--light-blue-bg);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        /* --- Button Select Styling --- */
+        .button-select-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+        }
+        
+        .select-btn {
+            padding: 12px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            font-size: 0.95rem;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        .select-btn:hover {
+            border-color: var(--primary-color);
+            background-color: var(--light-blue-bg);
+        }
+
+        .select-btn.active {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            border-color: var(--primary-color);
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+        
+        /* --- "Other" Text Input --- */
+        .other-text-input {
+            display: none; /* Hide by default */
+            margin-top: 1rem;
+        }
+
+        /* --- Main Action Buttons --- */
+        .no-incident-group {
+            margin-top: 2.5rem;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 1.5rem;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            flex-grow: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-family: 'Prompt', sans-serif;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:disabled {
+            cursor: not-allowed;
+            filter: grayscale(60%);
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+        }
+
+        .btn-submit {
+            background: linear-gradient(45deg, #28a745, #218838);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-reset {
+            background: linear-gradient(45deg, #ffc107, #e0a800);
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn-no-incident {
+            width: 100%;
+            background: linear-gradient(45deg, #6c757d, #5a6268);
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+        
+        /* --- Custom Alert Modal --- */
+        .custom-alert-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .custom-alert-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            max-width: 90%;
+            width: 400px;
+        }
+        .custom-alert-box p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+        .custom-alert-box button {
+            padding: 10px 25px;
+            border: none;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        /* --- NEW: Footer Styling --- */
+        footer {
+            text-align: center;
+            margin: 2rem 1rem;
+            color: #6c757d; /* A muted gray color */
+            font-size: 0.9rem;
+        }
+
+        /* --- Responsive for smaller screens --- */
+        @media (max-width: 600px) {
+            .container {
+                margin: 1rem;
+                padding: 1rem;
+            }
+            h1 { font-size: 1.8rem; }
+            h2 { font-size: 1.2rem; }
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <img src="https://i.postimg.cc/vHcRLT5g/image.png" alt="โลโก้" class="header-logo">
+            <h1>แบบฟอร์มรายงานอุบัติเหตุจราจร</h1>
+            <h2>ปภ.3 / ปภ.4</h2>
+        </header>
+
+        <form id="accident-form">
+            <!-- Date and Time -->
+            <div class="form-group">
+                <label for="incident-date">วันที่เกิดเหตุ:</label>
+                <input type="date" id="incident-date" name="incident_date" required>
+            </div>
+
+            <div class="form-group">
+                <label for="incident-time">เวลา:</label>
+                <input type="time" id="incident-time" name="incident_time" required>
+            </div>
+
+            <!-- Shift -->
+            <div class="form-group">
+                <label class="label-header">เวร:</label>
+                <div class="button-select-group" id="shift-group">
+                    <button type="button" class="select-btn" data-value="เช้า">เช้า</button>
+                    <button type="button" class="select-btn" data-value="บ่าย">บ่าย</button>
+                    <button type="button" class="select-btn" data-value="ดึก">ดึก</button>
+                </div>
+                <input type="hidden" name="shift" id="shift-value" required>
+            </div>
+
+            <!-- Victim Information -->
+            <div class="form-group">
+                <label for="victim-name">ชื่อ-สกุล ผู้ประสบเหตุ:</label>
+                <input type="text" id="victim-name" name="victim_name" placeholder="กรอกชื่อ-นามสกุล" required>
+            </div>
+
+            <div class="form-group">
+                <label for="victim-age">อายุ (ปี):</label>
+                <input type="number" id="victim-age" name="victim_age" placeholder="กรอกอายุเป็นตัวเลข" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="national-id">เลขบัตรประชาชน:</label>
+                <input type="text" id="national-id" name="national_id" placeholder="กรอกเลข 13 หลัก" pattern="\d{13}" title="กรุณากรอกเลขบัตรประชาชน 13 หลัก">
+            </div>
+
+            <div class="form-group">
+                <label for="address">ที่อยู่:</label>
+                <textarea id="address" name="address" rows="3" placeholder="กรอกที่อยู่ปัจจุบัน"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="location">สถานที่เกิดเหตุ:</label>
+                <input type="text" id="location" name="location" placeholder="ระบุสถานที่ให้ชัดเจน เช่น หน้าตลาดสด, กม.ที่ 5" required>
+            </div>
+
+            <!-- Victim's Vehicle -->
+            <div class="form-group">
+                <label class="label-header">พาหนะผู้บาดเจ็บ:</label>
+                <div class="button-select-group" id="victim-vehicle-group">
+                    <button type="button" class="select-btn" data-value="คนเดินเท้า">คนเดินเท้า</button>
+                    <button type="button" class="select-btn" data-value="ขับขี่ จยย.">ขับขี่ จยย.</button>
+                    <button type="button" class="select-btn" data-value="ซ้อน จยย.">ซ้อน จยย.</button>
+                    <button type="button" class="select-btn" data-value="ขับขี่ จักรยาน">ขับขี่ จักรยาน</button>
+                    <button type="button" class="select-btn" data-value="ซ้อน จักรยาน">ซ้อน จักรยาน</button>
+                    <button type="button" class="select-btn" data-value="ขับรถยนต์">ขับรถยนต์</button>
+                    <button type="button" class="select-btn" data-value="โดยสารรถยนต์">โดยสารรถยนต์</button>
+                    <button type="button" class="select-btn" data-value="ขับรถบรรทุก">ขับรถบรรทุก</button>
+                    <button type="button" class="select-btn" data-value="โดยสารรถบรรทุก">โดยสารรถบรรทุก</button>
+                    <button type="button" class="select-btn" data-value="อื่นๆ">อื่นๆ ระบุ...</button>
+                </div>
+                <input type="hidden" name="victim_vehicle" id="victim-vehicle-value" required>
+                <input type="text" id="victim-vehicle-other-text" name="victim_vehicle_other_text" class="other-text-input" placeholder="โปรดระบุพาหนะ">
+            </div>
+
+            <!-- Other Party's Vehicle -->
+            <div class="form-group">
+                <label class="label-header">พาหนะคู่กรณี:</label>
+                <div class="button-select-group" id="other-party-vehicle-group">
+                    <button type="button" class="select-btn" data-value="ไม่มี">ไม่มี</button>
+                    <button type="button" class="select-btn" data-value="คนเดินเท้า">คนเดินเท้า</button>
+                    <button type="button" class="select-btn" data-value="จยย.">จยย.</button>
+                    <button type="button" class="select-btn" data-value="จักรยาน">จักรยาน</button>
+                    <button type="button" class="select-btn" data-value="รถยนต์">รถยนต์</button>
+                    <button type="button" class="select-btn" data-value="รถบรรทุก">รถบรรทุก</button>
+                    <button type="button" class="select-btn" data-value="อื่นๆ">อื่นๆ ระบุ...</button>
+                </div>
+                <input type="hidden" name="other_party_vehicle" id="other-party-vehicle-value" required>
+                <input type="text" id="other-party-vehicle-other-text" name="other_party_vehicle_other_text" class="other-text-input" placeholder="โปรดระบุพาหนะคู่กรณี">
+            </div>
+
+            <!-- Treatment Result -->
+            <div class="form-group">
+                <label class="label-header">ผลการรักษา:</label>
+                <div class="button-select-group" id="treatment-result-group">
+                    <button type="button" class="select-btn" data-value="Admit">Admit</button>
+                    <button type="button" class="select-btn" data-value="ส่งต่อ">ส่งต่อ</button>
+                    <button type="button" class="select-btn" data-value="เสียชีวิต">เสียชีวิต</button>
+                    <button type="button" class="select-btn" data-value="กลับบ้าน">กลับบ้าน</button>
+                    <!-- UPDATED: Added "Other" option -->
+                    <button type="button" class="select-btn" data-value="อื่นๆ">อื่นๆ ระบุ...</button>
+                </div>
+                <input type="hidden" name="treatment_result" id="treatment-result-value" required>
+                <!-- UPDATED: Added text input for "Other" treatment -->
+                <input type="text" id="treatment-result-other-text" name="treatment_result_other_text" class="other-text-input" placeholder="โปรดระบุผลการรักษา">
+            </div>
+
+            <!-- Reporter and Remarks -->
+            <div class="form-group">
+                <label for="reporter-name">ผู้รายงาน:</label>
+                <input type="text" id="reporter-name" name="reporter_name" placeholder="กรอกชื่อผู้รายงาน" required>
+            </div>
+
+            <div class="form-group">
+                <label for="remarks">หมายเหตุ:</label>
+                <textarea id="remarks" name="remarks" rows="3" placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)"></textarea>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="no-incident-group">
+                <button type="button" id="no-incident-btn" class="btn btn-no-incident">รายงาน ไม่มีเหตุในเวร</button>
+            </div>
+            <div class="button-group">
+                <button type="submit" class="btn btn-submit">ส่งข้อมูล</button>
+                <button type="reset" class="btn btn-reset">ล้างข้อมูล</button>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert-overlay" class="custom-alert-overlay">
+        <div class="custom-alert-box">
+            <p id="custom-alert-message"></p>
+            <button id="custom-alert-ok-btn">ตกลง</button>
+        </div>
+    </div>
+
+    <!-- NEW: Footer Added -->
+    <footer>
+        <p>พัฒนาโดย. งานผู้ป่วยอุบัติเหตุฉุกเฉินและนิติเวช โรงพยาบาลเจาะไอร้อง</p>
+    </footer>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            // --- Custom Alert Logic ---
+            const alertOverlay = document.getElementById('custom-alert-overlay');
+            const alertMessage = document.getElementById('custom-alert-message');
+            const alertOkBtn = document.getElementById('custom-alert-ok-btn');
+
+            function showCustomAlert(message) {
+                alertMessage.textContent = message;
+                alertOverlay.style.display = 'flex';
+            }
+
+            alertOkBtn.addEventListener('click', () => {
+                alertOverlay.style.display = 'none';
+            });
+            // --- End Custom Alert Logic ---
+
+
+            function setupButtonSelect(groupId, hiddenInputId, otherTextInputId = null) {
+                const group = document.getElementById(groupId);
+                if (!group) return;
+
+                const hiddenInput = document.getElementById(hiddenInputId);
+                const buttons = group.querySelectorAll('.select-btn');
+                const otherTextInput = otherTextInputId ? document.getElementById(otherTextInputId) : null;
+
+                buttons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        buttons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                        hiddenInput.value = button.dataset.value;
+                        
+                        if (otherTextInput) {
+                            if (button.dataset.value === 'อื่นๆ') {
+                                otherTextInput.style.display = 'block';
+                                otherTextInput.setAttribute('required', 'true');
+                            } else {
+                                otherTextInput.style.display = 'none';
+                                otherTextInput.removeAttribute('required');
+                                otherTextInput.value = '';
+                            }
+                        }
+                    });
+                });
+            }
+
+            // Initialize all button groups
+            setupButtonSelect('shift-group', 'shift-value');
+            setupButtonSelect('victim-vehicle-group', 'victim-vehicle-value', 'victim-vehicle-other-text');
+            setupButtonSelect('other-party-vehicle-group', 'other-party-vehicle-value', 'other-party-vehicle-other-text');
+            // UPDATED: Added the new text input ID for treatment result
+            setupButtonSelect('treatment-result-group', 'treatment-result-value', 'treatment-result-other-text');
+
+            const form = document.getElementById('accident-form');
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbysLNGd7ncklLWmawDeUMbtQDlhJZaP8TECeB404urPWQooVA4hvg42XAVAWvvgask-/exec';
+
+            // --- Main Form Submission ---
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                const submitButton = form.querySelector('.btn-submit');
+
+                // Basic validation before submitting
+                if (form.checkValidity() === false) {
+                    showCustomAlert('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
+                    return;
+                }
+
+                const originalButtonText = submitButton.textContent;
+                submitButton.textContent = 'กำลังส่งข้อมูล...';
+                submitButton.disabled = true;
+
+                fetch(scriptURL, { method: 'POST', body: new FormData(form)})
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Success!', data);
+                        showCustomAlert('ส่งข้อมูลรายงานอุบัติเหตุเรียบร้อยแล้ว');
+                        form.reset();
+                    })
+                    .catch(error => {
+                        console.error('Error!', error.message);
+                        showCustomAlert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
+                    })
+                    .finally(() => {
+                        submitButton.textContent = originalButtonText;
+                        submitButton.disabled = false;
+                    });
+            });
+
+            // --- "No Incident" Button Logic ---
+            const noIncidentBtn = document.getElementById('no-incident-btn');
+            noIncidentBtn.addEventListener('click', function() {
+                const shiftValue = document.getElementById('shift-value').value;
+                const reporterName = document.getElementById('reporter-name').value;
+
+                if (!shiftValue) {
+                    showCustomAlert('กรุณาเลือกเวรของท่านก่อนทำการรายงาน');
+                    document.getElementById('shift-group').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+
+                if (!reporterName) {
+                    showCustomAlert('กรุณากรอกชื่อผู้รายงานก่อน');
+                    document.getElementById('reporter-name').focus();
+                    return;
+                }
+
+                const noIncidentForm = new FormData();
+                const now = new Date();
+                
+                noIncidentForm.append('incident_date', now.toLocaleDateString('sv')); // YYYY-MM-DD format
+                noIncidentForm.append('incident_time', now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+                noIncidentForm.append('shift', shiftValue);
+                noIncidentForm.append('reporter_name', reporterName);
+                noIncidentForm.append('remarks', 'ไม่มีเหตุในเวร');
+                
+                // Append placeholders for other fields
+                ['victim_name', 'victim_age', 'national_id', 'address', 'location', 'victim_vehicle', 'other_party_vehicle', 'treatment_result']
+                .forEach(field => noIncidentForm.append(field, '-'));
+
+                const originalButtonText = noIncidentBtn.textContent;
+                noIncidentBtn.textContent = 'กำลังส่งรายงาน...';
+                noIncidentBtn.disabled = true;
+
+                fetch(scriptURL, { method: 'POST', body: noIncidentForm })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Success (No Incident)!', data);
+                        showCustomAlert(`รายงาน "ไม่มีเหตุในเวร" สำหรับเวร "${shiftValue}" สำเร็จ`);
+                    })
+                    .catch(error => {
+                        console.error('Error!', error.message);
+                        showCustomAlert('เกิดข้อผิดพลาดในการส่งรายงาน: ' + error.message);
+                    })
+                    .finally(() => {
+                        noIncidentBtn.textContent = originalButtonText;
+                        noIncidentBtn.disabled = false;
+                    });
+            });
+
+
+            // Enhance the reset functionality
+            form.addEventListener('reset', function() {
+                form.querySelectorAll('.select-btn.active').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                form.querySelectorAll('input[type="hidden"]').forEach(input => {
+                    input.value = '';
+                });
+
+                form.querySelectorAll('.other-text-input').forEach(input => {
+                    input.style.display = 'none';
+                    input.removeAttribute('required');
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
