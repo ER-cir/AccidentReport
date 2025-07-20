@@ -186,7 +186,7 @@
 
     <script>
         // --- CONFIGURATION ---
-        const GOOGLE_SHEET_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vSb6aBtov4rBki4s-ekATQFuu4txgGBTAdmcKXTAmYHrijQiSpjPU9yuFf75upKW1P9vw78HBQxLJdP/pub?gid=0&single=true&output=csv');
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSb6aBtov4rBki4s-ekATQFuu4txgGBTAdmcKXTAmYHrijQiSpjPU9yuFf75upKW1P9vw78HBQxLJdP/pub?gid=0&single=true&output=csv';
         let allData = []; // Store all data globally
         let overallSummaryChart, locationsPieChart, datesPieChart; // Chart instances
 
@@ -219,7 +219,6 @@
 
         function parseAndMapData(text) {
             const lines = text.trim().split('\n').slice(1);
-            const reporterNames = ['สมชาย ใจดี', 'สมหญิง มุ่งมั่น', 'อาทิตย์ แจ่มใส'];
 
             return lines.map(line => {
                 const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
@@ -230,17 +229,28 @@
                 const name = cleanedValues[4] || 'ไม่ระบุชื่อ';
                 const location = cleanedValues[8] || 'ไม่ระบุ';
                 const treatment = cleanedValues[11] || 'ไม่ระบุ';
-                const age = parseInt(cleanedValues[5], 10) || Math.floor(Math.random() * 60) + 15;
+                const age = parseInt(cleanedValues[5], 10) || 'ไม่ระบุ';
                 const patientVehicle = cleanedValues[9] || 'ไม่ระบุ';
+                const otherVehicle = cleanedValues[10] || 'ไม่ระบุ';
+                const reporter = cleanedValues[12] || 'ไม่ระบุ'; // Column M for Reporter
+                const notes = cleanedValues[15] || 'ไม่มี'; // Column P for Notes
                 
                 const deceasedCount = treatment.includes('เสียชีวิต') ? 1 : 0;
                 const injuredCount = (deceasedCount === 0 && treatment && treatment !== 'N/A' && treatment !== 'ไม่ระบุ') ? 1 : 0;
                 
                 return {
-                    'วันที่เกิดเหตุ': date, 'เวลา': time, 'เวรชื่อ-สกุล ผู้ประสบเหตุ': name, 'อายุ (ปี)': age,
-                    'สถานที่เกิดเหตุ': location, 'พาหนะผู้บาดเจ็บ': patientVehicle, 'พาหนะคู่กรณี': 'ไม่ระบุ',
-                    'ผลการรักษา': treatment, 'ผู้รายงาน': reporterNames[Math.floor(Math.random() * reporterNames.length)],
-                    'หมายเหตุ': 'ไม่มี', 'ผู้บาดเจ็บ': injuredCount, 'ผู้เสียชีวิต': deceasedCount,
+                    'วันที่เกิดเหตุ': date,
+                    'เวลา': time,
+                    'เวรชื่อ-สกุล ผู้ประสบเหตุ': name,
+                    'อายุ (ปี)': age,
+                    'สถานที่เกิดเหตุ': location,
+                    'พาหนะผู้บาดเจ็บ': patientVehicle,
+                    'พาหนะคู่กรณี': otherVehicle,
+                    'ผลการรักษา': treatment,
+                    'ผู้รายงาน': reporter,
+                    'หมายเหตุ': notes,
+                    'ผู้บาดเจ็บ': injuredCount,
+                    'ผู้เสียชีวิต': deceasedCount,
                 };
             }).filter(row => row['วันที่เกิดเหตุ'] !== 'N/A' && row['วันที่เกิดเหตุ'] !== '');
         }
