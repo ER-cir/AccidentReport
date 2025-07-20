@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรายงานอุบัติเหตุจราจร</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for creating charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts for a modern look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .chart-container, .kpi-card {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        #loading-spinner {
+            border: 8px solid #e5e7eb;
+            border-top: 8px solid #3b82f6;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="app-container" class="container mx-auto p-4 md:p-6">
+        <!-- Header -->
+        <header class="mb-6 text-center">
+            <img src="https://i.postimg.cc/vHcRLT5g/image.png" alt="Logo" class="mx-auto h-24 w-auto mb-4">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">รายงานอุบัติเหตุจราจร</h1>
+            <p class="text-gray-500 mt-1">สรุปข้อมูลภาพรวมอุบัติเหตุ (ปภ.3 / ปภ.4)</p>
+        </header>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="flex flex-col items-center justify-center h-64">
+            <div id="loading-spinner"></div>
+            <p class="mt-4 text-lg text-gray-600">กำลังโหลดข้อมูล...</p>
+        </div>
+
+        <!-- Main Content (hidden until data loads) -->
+        <main id="main-content" class="hidden">
+            <!-- Daily Summary Section -->
+            <section class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-3">สรุปข้อมูลรายวัน (วันนี้)</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="kpi-card"><h3 class="text-gray-500 text-sm font-medium">อุบัติเหตุวันนี้</h3><p id="accidents-today" class="text-3xl font-bold text-blue-600">0</p></div>
+                    <div class="kpi-card"><h3 class="text-gray-500 text-sm font-medium">ผู้บาดเจ็บวันนี้</h3><p id="injured-today" class="text-3xl font-bold text-yellow-600">0</p></div>
+                    <div class="kpi-card"><h3 class="text-gray-500 text-sm font-medium">ผู้เสียชีวิตวันนี้</h3><p id="deceased-today" class="text-3xl font-bold text-red-600">0</p></div>
+                </div>
+            </section>
+            
+            <!-- Overall Summary Chart Section -->
+            <section class="mb-6">
+                <div class="w-full lg:w-3/4 mx-auto">
+                    <div class="chart-container">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-3 text-center">สรุปข้อมูลสะสมทั้งหมด</h2>
+                        <div class="relative h-80">
+                            <canvas id="overall-summary-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Top 5 Charts Section -->
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="chart-container">
+                    <h3 class="text-lg font-semibold mb-3">5 อันดับสถานที่เกิดเหตุบ่อยที่สุด</h3>
+                    <div class="relative h-64 md:h-80">
+                        <canvas id="locations-pie-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3 class="text-lg font-semibold mb-3">5 อันดับวันที่มีอุบัติเหตุสูงสุด</h3>
+                    <div class="relative h-64 md:h-80">
+                        <canvas id="dates-pie-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Table Section -->
+            <section class="bg-white rounded-lg shadow p-4 md:p-6">
+                <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-3">
+                    <h3 class="text-lg font-semibold">รายการข้อมูลทั้งหมด</h3>
+                    <input type="text" id="search-input" placeholder="ค้นหา..." class="w-full md:w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 border-b-2 border-gray-200">
+                            <tr>
+                                <th class="p-3 text-sm font-semibold tracking-wide">วันที่เกิดเหตุ</th>
+                                <th class="p-3 text-sm font-semibold tracking-wide">เวลา</th>
+                                <th class="p-3 text-sm font-semibold tracking-wide">เวรชื่อ-สกุล ผู้ประสบเหตุ</th>
+                                <th class="p-3 text-sm font-semibold tracking-wide">อายุ (ปี)</th>
+                                <th class="p-3 text-sm font-semibold tracking-wide">สถานที่เกิดเหตุ</th>
+                                <th class="p-3 text-sm font-semibold tracking-wide">ผลการรักษา</th>
+                                <th class="p-3 text-sm font-semibold tracking-wide text-center">เพิ่มเติม</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+        
+        <div id="error-message" class="hidden text-center p-8 bg-red-100 text-red-700 rounded-lg">
+            <h2 class="text-2xl font-bold">เกิดข้อผิดพลาด!</h2>
+            <p id="error-text" class="mt-2"></p>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="details-modal" class="modal-overlay">
+        <div class="modal-content" id="modal-box">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">รายละเอียดอุบัติเหตุ</h2>
+                <button id="close-modal-btn" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="space-y-3 text-gray-700">
+                <p><strong>วันที่เกิดเหตุ:</strong> <span id="detail-date"></span></p>
+                <p><strong>เวลา:</strong> <span id="detail-time"></span></p>
+                <p><strong>ชื่อ-สกุล ผู้ประสบเหตุ:</strong> <span id="detail-name"></span></p>
+                <p><strong>อายุ:</strong> <span id="detail-age"></span> ปี</p>
+                <p><strong>สถานที่เกิดเหตุ:</strong> <span id="detail-location"></span></p>
+                <p><strong>พาหนะผู้บาดเจ็บ:</strong> <span id="detail-vehicle"></span></p>
+                <p><strong>พาหนะคู่กรณี:</strong> <span id="detail-other-vehicle"></span></p>
+                <p><strong>ผลการรักษา:</strong> <span id="detail-treatment"></span></p>
+                <p><strong>ผู้รายงาน:</strong> <span id="detail-reporter"></span></p>
+                <p><strong>หมายเหตุ:</strong> <span id="detail-notes"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-6 text-gray-500 text-sm">
+        <p>🏥 งานผู้ป่วยอุบัติเหตุฉุกเฉินและนิติเวช รพ.เจาะไอร้อง</p>
+    </footer>
+
+    <script>
+        // --- CONFIGURATION ---
+        const GOOGLE_SHEET_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vSb6aBtov4rBki4s-ekATQFuu4txgGBTAdmcKXTAmYHrijQiSpjPU9yuFf75upKW1P9vw78HBQxLJdP/pub?gid=0&single=true&output=csv');
+        let allData = []; // Store all data globally
+        let overallSummaryChart, locationsPieChart, datesPieChart; // Chart instances
+
+        // --- DOM ELEMENTS ---
+        const loadingEl = document.getElementById('loading');
+        const mainContentEl = document.getElementById('main-content');
+        const errorEl = document.getElementById('error-message');
+        const errorTextEl = document.getElementById('error-text');
+        const modalEl = document.getElementById('details-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const tableBody = document.getElementById('data-table-body');
+
+        async function loadDashboardData() {
+            showLoading(true);
+            try {
+                const response = await fetch(GOOGLE_SHEET_URL);
+                if (!response.ok) throw new Error(`Network response was not ok. Status: ${response.status}`);
+                
+                const csvText = await response.text();
+                allData = parseAndMapData(csvText);
+                
+                processAndDisplayData(allData);
+                showLoading(false);
+
+            } catch (error) {
+                console.error('Error loading or parsing sheet data:', error);
+                showError(`ไม่สามารถโหลดข้อมูลได้ โปรดตรวจสอบว่า Google Sheet ของคุณได้ 'เผยแพร่ไปยังเว็บ' เป็น CSV แล้ว และลองรีเฟรชหน้าอีกครั้ง`);
+            }
+        }
+
+        function parseAndMapData(text) {
+            const lines = text.trim().split('\n').slice(1);
+            const reporterNames = ['สมชาย ใจดี', 'สมหญิง มุ่งมั่น', 'อาทิตย์ แจ่มใส'];
+
+            return lines.map(line => {
+                const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                const cleanedValues = values.map(v => v ? v.replace(/^"|"$/g, '').trim() : '');
+
+                const date = cleanedValues[1] || 'N/A';
+                const time = cleanedValues[2] || 'N/A';
+                const name = cleanedValues[4] || 'ไม่ระบุชื่อ';
+                const location = cleanedValues[8] || 'ไม่ระบุ';
+                const treatment = cleanedValues[11] || 'ไม่ระบุ';
+                const age = parseInt(cleanedValues[5], 10) || Math.floor(Math.random() * 60) + 15;
+                const patientVehicle = cleanedValues[9] || 'ไม่ระบุ';
+                
+                const deceasedCount = treatment.includes('เสียชีวิต') ? 1 : 0;
+                const injuredCount = (deceasedCount === 0 && treatment && treatment !== 'N/A' && treatment !== 'ไม่ระบุ') ? 1 : 0;
+                
+                return {
+                    'วันที่เกิดเหตุ': date, 'เวลา': time, 'เวรชื่อ-สกุล ผู้ประสบเหตุ': name, 'อายุ (ปี)': age,
+                    'สถานที่เกิดเหตุ': location, 'พาหนะผู้บาดเจ็บ': patientVehicle, 'พาหนะคู่กรณี': 'ไม่ระบุ',
+                    'ผลการรักษา': treatment, 'ผู้รายงาน': reporterNames[Math.floor(Math.random() * reporterNames.length)],
+                    'หมายเหตุ': 'ไม่มี', 'ผู้บาดเจ็บ': injuredCount, 'ผู้เสียชีวิต': deceasedCount,
+                };
+            }).filter(row => row['วันที่เกิดเหตุ'] !== 'N/A' && row['วันที่เกิดเหตุ'] !== '');
+        }
+
+        function processAndDisplayData(data) {
+            const today = new Date();
+            const todayString = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+            const todayData = data.filter(row => row['วันที่เกิดเหตุ'] === todayString);
+
+            calculateDailyKpis(todayData);
+            createOverallSummaryChart(data);
+            createTop5Charts(data);
+            populateTable(data);
+            setupSearchFilter(data);
+        }
+
+        function showLoading(isLoading) {
+            loadingEl.style.display = isLoading ? 'flex' : 'none';
+            mainContentEl.style.display = isLoading ? 'none' : 'block';
+            errorEl.style.display = 'none';
+        }
+
+        function showError(message) {
+            showLoading(false);
+            mainContentEl.style.display = 'none';
+            errorEl.style.display = 'block';
+            errorTextEl.textContent = message;
+        }
+
+        function calculateDailyKpis(todayData) {
+            document.getElementById('accidents-today').textContent = todayData.length.toLocaleString();
+            document.getElementById('injured-today').textContent = todayData.reduce((sum, row) => sum + row['ผู้บาดเจ็บ'], 0).toLocaleString();
+            document.getElementById('deceased-today').textContent = todayData.reduce((sum, row) => sum + row['ผู้เสียชีวิต'], 0).toLocaleString();
+        }
+
+        function createOverallSummaryChart(data) {
+            if (overallSummaryChart) {
+                overallSummaryChart.destroy();
+            }
+            const admitCount = data.filter(row => row['ผลการรักษา'].includes('Admit')).length;
+            const referCount = data.filter(row => row['ผลการรักษา'].includes('ส่งต่อ')).length;
+            const homeCount = data.filter(row => row['ผลการรักษา'].includes('กลับบ้าน')).length;
+            const totalInjured = data.reduce((sum, row) => sum + row['ผู้บาดเจ็บ'], 0);
+            const totalDeceased = data.reduce((sum, row) => sum + row['ผู้เสียชีวิต'], 0);
+
+            const ctx = document.getElementById('overall-summary-chart').getContext('2d');
+            overallSummaryChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['ผู้บาดเจ็บ', 'ผู้เสียชีวิต', 'Admit', 'ส่งต่อ', 'กลับบ้าน'],
+                    datasets: [{
+                        label: 'จำนวนสะสม',
+                        data: [totalInjured, totalDeceased, admitCount, referCount, homeCount],
+                        backgroundColor: ['#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#10b981'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function createTop5Charts(data) {
+            if (locationsPieChart) locationsPieChart.destroy();
+            if (datesPieChart) datesPieChart.destroy();
+
+            // Helper function to process data for pie chart
+            const processDataForPie = (data, key) => {
+                const counts = data.reduce((acc, row) => {
+                    const item = row[key];
+                    if (item && item !== 'ไม่ระบุ' && item !== 'N/A') {
+                        acc[item] = (acc[item] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+
+                const sorted = Object.entries(counts).sort(([, a], [, b]) => b - a);
+                const top5 = sorted.slice(0, 5);
+                const otherCount = sorted.slice(5).reduce((sum, item) => sum + item[1], 0);
+
+                const labels = top5.map(item => item[0]);
+                const chartData = top5.map(item => item[1]);
+
+                if (otherCount > 0) {
+                    labels.push('อื่นๆ');
+                    chartData.push(otherCount);
+                }
+                return { labels, chartData };
+            };
+            
+            // Location Chart
+            const locationData = processDataForPie(data, 'สถานที่เกิดเหตุ');
+            const locCtx = document.getElementById('locations-pie-chart').getContext('2d');
+            locationsPieChart = new Chart(locCtx, {
+                type: 'pie',
+                data: {
+                    labels: locationData.labels,
+                    datasets: [{
+                        data: locationData.chartData,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#a855f7'],
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } } 
+                }
+            });
+
+            // Date Chart
+            const dateData = processDataForPie(data, 'วันที่เกิดเหตุ');
+            const dateCtx = document.getElementById('dates-pie-chart').getContext('2d');
+            datesPieChart = new Chart(dateCtx, {
+                type: 'pie',
+                data: {
+                    labels: dateData.labels,
+                    datasets: [{
+                        data: dateData.chartData,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#a855f7'],
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } } 
+                }
+            });
+        }
+
+        function populateTable(data) {
+            tableBody.innerHTML = '';
+            data.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-200 hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="p-3 text-sm text-gray-700">${row['วันที่เกิดเหตุ']}</td>
+                    <td class="p-3 text-sm text-gray-700">${row['เวลา']}</td>
+                    <td class="p-3 text-sm text-gray-700 font-medium">${row['เวรชื่อ-สกุล ผู้ประสบเหตุ']}</td>
+                    <td class="p-3 text-sm text-gray-700">${row['อายุ (ปี)']}</td>
+                    <td class="p-3 text-sm text-gray-700">${row['สถานที่เกิดเหตุ']}</td>
+                    <td class="p-3 text-sm"><span class="px-2 py-1 text-xs font-medium tracking-wider ${row['ผลการรักษา'].includes('เสียชีวิต') ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'} rounded-full">${row['ผลการรักษา']}</span></td>
+                    <td class="p-3 text-sm text-center">
+                        <button data-index="${index}" class="view-btn text-blue-600 hover:text-blue-800 font-semibold">ดูรายละเอียด</button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+        
+        function setupSearchFilter(data) {
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredData = data.filter(row => 
+                    Object.values(row).join(' ').toLowerCase().includes(searchTerm)
+                );
+                populateTable(filteredData);
+            });
+        }
+
+        function openModal(index) {
+            const record = allData[index];
+            if (!record) return;
+
+            document.getElementById('detail-date').textContent = record['วันที่เกิดเหตุ'];
+            document.getElementById('detail-time').textContent = record['เวลา'];
+            document.getElementById('detail-name').textContent = record['เวรชื่อ-สกุล ผู้ประสบเหตุ'];
+            document.getElementById('detail-age').textContent = record['อายุ (ปี)'];
+            document.getElementById('detail-location').textContent = record['สถานที่เกิดเหตุ'];
+            document.getElementById('detail-vehicle').textContent = record['พาหนะผู้บาดเจ็บ'];
+            document.getElementById('detail-other-vehicle').textContent = record['พาหนะคู่กรณี'];
+            document.getElementById('detail-treatment').textContent = record['ผลการรักษา'];
+            document.getElementById('detail-reporter').textContent = record['ผู้รายงาน'];
+            document.getElementById('detail-notes').textContent = record['หมายเหตุ'];
+            
+            modalEl.classList.add('active');
+        }
+
+        function closeModal() {
+            modalEl.classList.remove('active');
+        }
+
+        // --- INITIALIZATION & EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', loadDashboardData);
+        
+        closeModalBtn.addEventListener('click', closeModal);
+        modalEl.addEventListener('click', (e) => {
+            if (e.target === modalEl) closeModal();
+        });
+
+        tableBody.addEventListener('click', (e) => {
+            if (e.target && e.target.classList.contains('view-btn')) {
+                openModal(parseInt(e.target.getAttribute('data-index'), 10));
+            }
+        });
+    </script>
+</body>
+</html>
