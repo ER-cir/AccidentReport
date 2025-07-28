@@ -129,9 +129,16 @@
 
             <!-- Data Table Section -->
             <section class="bg-white rounded-lg shadow p-4 md:p-6">
-                <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-3">
+                <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
                     <h3 class="text-lg font-semibold">รายการข้อมูลทั้งหมด</h3>
-                    <input type="text" id="search-input" placeholder="ค้นหา..." class="w-full md:w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <label for="start-date-filter" class="text-sm">จากวันที่:</label>
+                        <input type="date" id="start-date-filter" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label for="end-date-filter" class="text-sm">ถึงวันที่:</label>
+                        <input type="date" id="end-date-filter" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="search-input" placeholder="ค้นหา..." class="w-full md:w-auto p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="clear-filter-btn" class="p-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md">ล้างตัวกรอง</button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
@@ -198,6 +205,10 @@
         const modalEl = document.getElementById('details-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const tableBody = document.getElementById('data-table-body');
+        const searchInput = document.getElementById('search-input');
+        const startDateFilterInput = document.getElementById('start-date-filter');
+        const endDateFilterInput = document.getElementById('end-date-filter');
+        const clearFilterBtn = document.getElementById('clear-filter-btn');
 
         async function loadDashboardData() {
             showLoading(true);
@@ -217,6 +228,14 @@
             }
         }
 
+        function parseSheetDate(d) { // d is "D/M/YYYY"
+            if (!d || !d.includes('/')) return null;
+            const parts = d.split('/');
+            if (parts.length !== 3) return null;
+            // Note: months are 0-based in JS Date, so parts[1] - 1
+            return new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+
         function parseAndMapData(text) {
             const lines = text.trim().split('\n').slice(1);
 
@@ -232,8 +251,8 @@
                 const age = parseInt(cleanedValues[5], 10) || 'ไม่ระบุ';
                 const patientVehicle = cleanedValues[9] || 'ไม่ระบุ';
                 const otherVehicle = cleanedValues[10] || 'ไม่ระบุ';
-                const reporter = cleanedValues[12] || 'ไม่ระบุ'; // Column M for Reporter
-                const notes = cleanedValues[15] || 'ไม่มี'; // Column P for Notes
+                const reporter = cleanedValues[12] || 'ไม่ระบุ';
+                const notes = cleanedValues[15] || 'ไม่มี';
                 
                 const deceasedCount = treatment.includes('เสียชีวิต') ? 1 : 0;
                 const injuredCount = (deceasedCount === 0 && treatment && treatment !== 'N/A' && treatment !== 'ไม่ระบุ') ? 1 : 0;
@@ -264,7 +283,7 @@
             createOverallSummaryChart(data);
             createTop5Charts(data);
             populateTable(data);
-            setupSearchFilter(data);
+            setupFilters();
         }
 
         function showLoading(isLoading) {
@@ -326,7 +345,6 @@
             if (locationsPieChart) locationsPieChart.destroy();
             if (datesPieChart) datesPieChart.destroy();
 
-            // Helper function to process data for pie chart
             const processDataForPie = (data, key) => {
                 const counts = data.reduce((acc, row) => {
                     const item = row[key];
@@ -350,7 +368,6 @@
                 return { labels, chartData };
             };
             
-            // Location Chart
             const locationData = processDataForPie(data, 'สถานที่เกิดเหตุ');
             const locCtx = document.getElementById('locations-pie-chart').getContext('2d');
             locationsPieChart = new Chart(locCtx, {
@@ -369,7 +386,6 @@
                 }
             });
 
-            // Date Chart
             const dateData = processDataForPie(data, 'วันที่เกิดเหตุ');
             const dateCtx = document.getElementById('dates-pie-chart').getContext('2d');
             datesPieChart = new Chart(dateCtx, {
@@ -391,9 +407,13 @@
 
         function populateTable(data) {
             tableBody.innerHTML = '';
-            data.forEach((row, index) => {
+            data.forEach((row) => {
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-gray-200 hover:bg-gray-50';
+                
+                // Find original index to pass to the modal
+                const originalIndex = allData.findIndex(originalRow => originalRow === row);
+
                 tr.innerHTML = `
                     <td class="p-3 text-sm text-gray-700">${row['วันที่เกิดเหตุ']}</td>
                     <td class="p-3 text-sm text-gray-700">${row['เวลา']}</td>
@@ -402,20 +422,52 @@
                     <td class="p-3 text-sm text-gray-700">${row['สถานที่เกิดเหตุ']}</td>
                     <td class="p-3 text-sm"><span class="px-2 py-1 text-xs font-medium tracking-wider ${row['ผลการรักษา'].includes('เสียชีวิต') ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'} rounded-full">${row['ผลการรักษา']}</span></td>
                     <td class="p-3 text-sm text-center">
-                        <button data-index="${index}" class="view-btn text-blue-600 hover:text-blue-800 font-semibold">ดูรายละเอียด</button>
+                        <button data-original-index="${originalIndex}" class="view-btn text-blue-600 hover:text-blue-800 font-semibold">ดูรายละเอียด</button>
                     </td>
                 `;
                 tableBody.appendChild(tr);
             });
         }
         
-        function setupSearchFilter(data) {
-            document.getElementById('search-input').addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                const filteredData = data.filter(row => 
+        function applyFilters() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const startDate = startDateFilterInput.value ? new Date(startDateFilterInput.value) : null;
+            const endDate = endDateFilterInput.value ? new Date(endDateFilterInput.value) : null;
+
+            if (startDate) startDate.setHours(0, 0, 0, 0);
+            if (endDate) endDate.setHours(23, 59, 59, 999);
+
+            let filteredData = allData;
+
+            if (startDate || endDate) {
+                filteredData = filteredData.filter(row => {
+                    const rowDate = parseSheetDate(row['วันที่เกิดเหตุ']);
+                    if (!rowDate) return false;
+                    const isAfterStart = startDate ? rowDate >= startDate : true;
+                    const isBeforeEnd = endDate ? rowDate <= endDate : true;
+                    return isAfterStart && isBeforeEnd;
+                });
+            }
+
+            if (searchTerm) {
+                filteredData = filteredData.filter(row => 
                     Object.values(row).join(' ').toLowerCase().includes(searchTerm)
                 );
-                populateTable(filteredData);
+            }
+            
+            populateTable(filteredData);
+        }
+
+        function setupFilters() {
+            [searchInput, startDateFilterInput, endDateFilterInput].forEach(input => {
+                input.addEventListener('input', applyFilters);
+            });
+            
+            clearFilterBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                startDateFilterInput.value = '';
+                endDateFilterInput.value = '';
+                populateTable(allData);
             });
         }
 
@@ -451,7 +503,8 @@
 
         tableBody.addEventListener('click', (e) => {
             if (e.target && e.target.classList.contains('view-btn')) {
-                openModal(parseInt(e.target.getAttribute('data-index'), 10));
+                const originalIndex = e.target.getAttribute('data-original-index');
+                openModal(parseInt(originalIndex, 10));
             }
         });
     </script>
