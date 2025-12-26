@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ข้อมูลผู้ป่วยอุบัติเหตุจราจร (7 วันอันตราย)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; background-color: #f8fafc; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        .table-container { overflow-x: auto; max-height: 500px; }
+        .tab-active { background-color: #4f46e5; color: white; border-color: #4f46e5; box-shadow: 0 4px 6px -1px rgb(79 70 229 / 0.2); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        .logo-shadow { filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1)); }
+        thead th { position: sticky; top: 0; background-color: #f8fafc; z-index: 10; border-bottom: 2px solid #e2e8f0; }
+        .status-badge { transition: all 0.2s; }
+        .status-badge:hover { transform: translateY(-1px); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        
+        <!-- Header Section -->
+        <div class="flex flex-col items-center text-center mb-10">
+            <img src="https://i.postimg.cc/vHcRLT5g/image.png" alt="Hospital Logo" class="h-24 w-auto mb-4 logo-shadow" onerror="this.src='https://via.placeholder.com/100?text=LOGO'">
+            <h1 class="text-2xl md:text-4xl font-bold text-slate-800 leading-tight">รายงานอุบัติเหตุจราจร (7 วันอันตราย)</h1>
+            <h2 class="text-lg md:text-xl font-medium text-slate-600 mt-2">งานผู้ป่วยอุบัติเหตุฉุกเฉินและนิติเวช รพ.เจาะไอร้อง</h2>
+            <div class="w-24 h-1.5 bg-indigo-600 rounded-full mt-6"></div>
+        </div>
+
+        <!-- Dashboard Controller -->
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+                <h3 class="text-xl font-bold text-slate-700">สรุปข้อมูลภาพรวม</h3>
+                <p class="text-slate-500 font-medium flex items-center gap-2 text-sm mt-1">
+                    <span class="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    ช่วงเฝ้าระวัง: 30 ธ.ค. 2568 - 5 ม.ค. 2569
+                </p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <button id="refreshBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl text-sm font-semibold transition-all flex items-center gap-2 shadow-lg hover:shadow-indigo-200 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    อัปเดตข้อมูล
+                </button>
+            </div>
+        </div>
+
+        <!-- Date Tabs -->
+        <div class="mb-8 overflow-x-auto pb-2">
+            <div id="dateTabs" class="flex p-1.5 bg-slate-200/50 rounded-2xl w-max min-w-full">
+                <button data-date="all" class="tab-item px-8 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap tab-active">
+                    รวมทั้งหมด
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <div class="col-span-2 lg:col-span-1 bg-indigo-600 p-6 rounded-3xl shadow-lg shadow-indigo-100 text-white">
+                <p class="text-indigo-100 text-xs uppercase font-bold tracking-widest">บาดเจ็บรวม</p>
+                <h2 id="totalInjuries" class="text-5xl font-bold mt-2">0</h2>
+                <p id="viewLabel" class="text-[11px] text-indigo-200 mt-3 font-medium uppercase tracking-wider">ข้อมูลสะสม</p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-b-4 border-b-red-500">
+                <p class="text-slate-500 text-xs uppercase font-bold tracking-widest">เสียชีวิต</p>
+                <h2 id="totalDeath" class="text-4xl font-bold text-red-600 mt-2">0</h2>
+                <p class="text-[10px] text-slate-400 mt-2 font-medium">Fatalities</p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-b-4 border-b-green-500">
+                <p class="text-slate-500 text-xs uppercase font-bold tracking-widest">กลับบ้าน</p>
+                <h2 id="totalHome" class="text-4xl font-bold text-green-600 mt-2">0</h2>
+                <p class="text-[10px] text-slate-400 mt-2 font-medium">Discharged</p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-b-4 border-b-blue-500">
+                <p class="text-slate-500 text-xs uppercase font-bold tracking-widest">Admit</p>
+                <h2 id="totalAdmit" class="text-4xl font-bold text-blue-600 mt-2">0</h2>
+                <p class="text-[10px] text-slate-400 mt-2 font-medium">Hospitalized</p>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 border-b-4 border-b-yellow-500">
+                <p class="text-slate-500 text-xs uppercase font-bold tracking-widest">ส่งต่อ</p>
+                <h2 id="totalRefer" class="text-4xl font-bold text-yellow-600 mt-2">0</h2>
+                <p class="text-[10px] text-slate-400 mt-2 font-medium">Referral</p>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span class="w-1.5 h-6 bg-indigo-600 rounded-full"></span>
+                        แนวโน้มจำนวนผู้บาดเจ็บรายวัน
+                    </h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <span class="w-1.5 h-6 bg-orange-500 rounded-full"></span>
+                    ผลการรักษา <span id="chartSubLabel" class="text-sm font-normal text-slate-400">(ทั้งหมด)</span>
+                </h3>
+                <div class="chart-container">
+                    <canvas id="outcomeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed List -->
+        <div class="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span class="w-1.5 h-6 bg-slate-400 rounded-full"></span>
+                        รายชื่อผู้ป่วย
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1" id="tableDateLabel">แสดงผลทั้งหมด</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <input type="text" id="tableSearch" placeholder="ค้นหาชื่อ..." class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-full md:w-64">
+                        <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <span id="rowCount" class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-xl whitespace-nowrap">0 รายการ</span>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-slate-600 text-[11px] uppercase tracking-wider whitespace-nowrap">
+                            <th class="px-6 py-4 font-bold">วัน/เวลา</th>
+                            <th class="px-6 py-4 font-bold">ชื่อ-นามสกุล</th>
+                            <th class="px-6 py-4 font-bold">สถานที่</th>
+                            <th class="px-6 py-4 font-bold">พาหนะ</th>
+                            <th class="px-6 py-4 font-bold">คู่กรณี</th>
+                            <th class="px-6 py-4 font-bold">ผลการรักษา</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailTableBody" class="text-sm text-slate-700 divide-y divide-slate-100">
+                        <tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 italic">เตรียมพร้อมดึงข้อมูล...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer class="mt-12 text-center pb-12 border-t border-slate-200 pt-8">
+            <p class="text-slate-400 text-xs font-semibold tracking-widest uppercase mb-2">
+                งานข้อมูลและสารสนเทศทางการแพทย์
+            </p>
+            <p class="text-slate-300 text-[10px] uppercase font-bold tracking-widest">
+                Traffic Surveillance System &copy; 2025 Cho-airong Hospital
+            </p>
+        </footer>
+
+        <!-- Overlays -->
+        <div id="loading" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+            <div class="flex flex-col items-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-100 border-t-indigo-600"></div>
+                <p class="mt-6 font-bold text-slate-700 animate-pulse text-lg">กำลังโหลดข้อมูลล่าสุด...</p>
+            </div>
+        </div>
+
+        <div id="errorBox" class="fixed bottom-6 right-6 max-w-sm p-5 bg-white shadow-2xl rounded-3xl border-l-8 border-l-red-500 hidden z-50 animate-bounce-in">
+            <div class="flex gap-4">
+                <div class="bg-red-100 p-2 rounded-full h-fit text-red-600">
+                    <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                </div>
+                <div>
+                    <p class="font-bold text-slate-800">การเชื่อมต่อผิดพลาด</p>
+                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">ตรวจสอบการตั้งค่า "แชร์ไปยังเว็บ" ใน Google Sheets ของคุณ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_ID = '1Y-0YaGgOU9OCopQ_UcreIoqORnMtQ-FkAAN3zItuyxo';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+
+        const TARGET_DATES = [
+            '30/12/2025', '31/12/2025', '01/01/2026',
+            '02/01/2026', '03/01/2026', '04/01/2026', '05/01/2026'
+        ];
+
+        let rawDataStore = [];
+        let dailyStatsStore = {}; 
+        let overallStatsStore = { death: 0, home: 0, admit: 0, refer: 0, total: 0 };
+        let currentView = 'all';
+        let searchQuery = '';
+
+        let dailyChartInstance = null;
+        let outcomeChartInstance = null;
+
+        // --- Core Functions ---
+
+        function initTabs() {
+            const tabsContainer = document.getElementById('dateTabs');
+            if (!tabsContainer) return;
+
+            const allBtn = tabsContainer.querySelector('[data-date="all"]');
+            tabsContainer.innerHTML = '';
+            tabsContainer.appendChild(allBtn);
+            allBtn.onclick = () => switchView('all');
+
+            TARGET_DATES.forEach(date => {
+                const btn = document.createElement('button');
+                btn.className = 'tab-item px-5 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap text-slate-500 hover:bg-slate-300/30';
+                btn.textContent = date.substring(0, 5); 
+                btn.setAttribute('data-date', date);
+                btn.onclick = () => switchView(date);
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        async function fetchData() {
+            toggleLoading(true);
+            document.getElementById('errorBox').classList.add('hidden');
+            
+            try {
+                const response = await fetch(CSV_URL);
+                if (!response.ok) throw new Error('Network Error');
+                const text = await response.text();
+                
+                rawDataStore = parseCSV(text);
+                if (rawDataStore.length === 0) throw new Error('No Data Found');
+                
+                processData(rawDataStore);
+                renderView();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('errorBox').classList.remove('hidden');
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/);
+            if (lines.length < 2) return [];
+            
+            // Handle CSV quoting correctly
+            const parseLine = (line) => {
+                const result = [];
+                let cell = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') inQuotes = !inQuotes;
+                    else if (char === ',' && !inQuotes) {
+                        result.push(cell.trim());
+                        cell = '';
+                    } else cell += char;
+                }
+                result.push(cell.trim());
+                return result;
+            };
+
+            const headers = parseLine(lines[0]);
+            return lines.slice(1).filter(l => l.trim()).map(line => {
+                const values = parseLine(line);
+                const obj = {};
+                headers.forEach((h, i) => {
+                    obj[h.replace(/"/g, '')] = (values[i] || '').replace(/"/g, '');
+                });
+                return obj;
+            });
+        }
+
+        function findKey(row, keywords) {
+            return Object.keys(row).find(k => 
+                keywords.some(kw => k.toLowerCase().includes(kw.toLowerCase()))
+            );
+        }
+
+        function processData(data) {
+            overallStatsStore = { death: 0, home: 0, admit: 0, refer: 0, total: 0 };
+            dailyStatsStore = {};
+            TARGET_DATES.forEach(d => dailyStatsStore[d] = { death: 0, home: 0, admit: 0, refer: 0, total: 0 });
+
+            data.forEach(row => {
+                const dKey = findKey(row, ['วันที่', 'date', 'วัน']);
+                const rawDate = row[dKey] || '';
+                
+                // Normalizing date to match target (handling leading zeros)
+                const matchedDate = TARGET_DATES.find(td => {
+                    const parts = td.split('/');
+                    const rParts = rawDate.split('/');
+                    if (rParts.length < 3) return false;
+                    return parseInt(parts[0]) === parseInt(rParts[0]) && 
+                           parseInt(parts[1]) === parseInt(rParts[1]) && 
+                           parts[2] === rParts[2];
+                });
+
+                if (matchedDate) {
+                    row._matchedDate = matchedDate; // Cache for filtering
+                    const oKey = findKey(row, ['ผลการรักษา', 'สถานะ', 'outcome', 'status']);
+                    const val = (row[oKey] || '').toLowerCase();
+                    
+                    let type = '';
+                    if (val.includes('ตาย') || val.includes('เสีย') || val.includes('dead')) type = 'death';
+                    else if (val.includes('กลับบ้าน') || val.includes('d/c') || val.includes('home')) type = 'home';
+                    else if (val.includes('admit') || val.includes('รักษา')) type = 'admit';
+                    else if (val.includes('ส่งต่อ') || val.includes('refer')) type = 'refer';
+
+                    if (type) {
+                        dailyStatsStore[matchedDate][type]++;
+                        overallStatsStore[type]++;
+                    }
+                    dailyStatsStore[matchedDate].total++;
+                    overallStatsStore.total++;
+                }
+            });
+        }
+
+        function renderView() {
+            const stats = (currentView === 'all') ? overallStatsStore : dailyStatsStore[currentView];
+            
+            // Update Numbers
+            document.getElementById('totalInjuries').innerText = stats.total.toLocaleString();
+            document.getElementById('totalDeath').innerText = stats.death.toLocaleString();
+            document.getElementById('totalHome').innerText = stats.home.toLocaleString();
+            document.getElementById('totalAdmit').innerText = stats.admit.toLocaleString();
+            document.getElementById('totalRefer').innerText = stats.refer.toLocaleString();
+
+            document.getElementById('viewLabel').innerText = currentView === 'all' ? 'ยอดรวมสะสม 7 วัน' : `ข้อมูลวันที่ ${currentView}`;
+            document.getElementById('chartSubLabel').innerText = currentView === 'all' ? '(สะสมทั้งหมด)' : `(${currentView})`;
+            document.getElementById('tableDateLabel').innerText = currentView === 'all' ? 'แสดงข้อมูลทั้งหมด 7 วัน' : `ข้อมูลเฉพาะวันที่ ${currentView}`;
+
+            renderTable();
+            updateCharts(stats);
+        }
+
+        function renderTable() {
+            let html = '';
+            let count = 0;
+            const tbody = document.getElementById('detailTableBody');
+
+            rawDataStore.forEach(row => {
+                // Modified filter: Ensure record belongs to the surveillance period
+                // only show rows that have a matched target date
+                if (!row._matchedDate) return; 
+
+                if (currentView === 'all' || row._matchedDate === currentView) {
+                    const nKey = findKey(row, ['ชื่อ', 'name']);
+                    const name = row[nKey] || '-';
+                    
+                    // Search Filter
+                    if (searchQuery && !name.includes(searchQuery)) return;
+
+                    const tKey = findKey(row, ['เวลา', 'time']);
+                    const lKey = findKey(row, ['สถานที่', 'location']);
+                    const vKey = findKey(row, ['พาหนะผู้บาดเจ็บ', 'vehicle']);
+                    const oKey = findKey(row, ['คู่กรณี', 'opponent']);
+                    const resKey = findKey(row, ['ผลการรักษา', 'outcome']);
+                    
+                    const res = (row[resKey] || '').toLowerCase();
+                    let badge = '<span class="px-2 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase">Unknown</span>';
+                    if (res.includes('ตาย') || res.includes('เสีย')) badge = '<span class="status-badge px-2 py-1 bg-red-100 text-red-600 border border-red-200 rounded-lg text-[10px] font-bold uppercase">DEATH</span>';
+                    else if (res.includes('กลับ')) badge = '<span class="status-badge px-2 py-1 bg-green-100 text-green-600 border border-green-200 rounded-lg text-[10px] font-bold uppercase">D/C</span>';
+                    else if (res.includes('admit')) badge = '<span class="status-badge px-2 py-1 bg-blue-100 text-blue-600 border border-blue-200 rounded-lg text-[10px] font-bold uppercase">ADMIT</span>';
+                    else if (res.includes('ส่งต่อ')) badge = '<span class="status-badge px-2 py-1 bg-yellow-100 text-yellow-700 border border-yellow-200 rounded-lg text-[10px] font-bold uppercase">REFER</span>';
+
+                    html += `
+                        <tr class="hover:bg-slate-50/80 transition-all border-b border-slate-50">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-slate-800">${row._matchedDate || '-'}</div>
+                                <div class="text-[10px] text-slate-400 font-bold">${row[tKey] || ''}</div>
+                            </td>
+                            <td class="px-6 py-4 font-bold text-slate-700">${name}</td>
+                            <td class="px-6 py-4 text-slate-500 text-xs leading-relaxed max-w-[180px] truncate">${row[lKey] || '-'}</td>
+                            <td class="px-6 py-4">
+                                <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-[10px] font-bold border border-indigo-100">${row[vKey] || '-'}</span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-500 text-xs">${row[oKey] || '-'}</td>
+                            <td class="px-6 py-4">${badge}</td>
+                        </tr>
+                    `;
+                    count++;
+                }
+            });
+
+            tbody.innerHTML = html || '<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400">ไม่พบข้อมูลที่ค้นหา</td></tr>';
+            document.getElementById('rowCount').innerText = `${count} รายการ`;
+        }
+
+        function updateCharts(stats) {
+            const ctxDaily = document.getElementById('dailyChart').getContext('2d');
+            const ctxOutcome = document.getElementById('outcomeChart').getContext('2d');
+
+            if (dailyChartInstance) dailyChartInstance.destroy();
+            dailyChartInstance = new Chart(ctxDaily, {
+                type: 'bar',
+                data: {
+                    labels: TARGET_DATES.map(d => d.substring(0, 5)),
+                    datasets: [{
+                        label: 'ผู้บาดเจ็บ',
+                        data: TARGET_DATES.map(d => dailyStatsStore[d].total),
+                        backgroundColor: TARGET_DATES.map(d => d === currentView ? '#4f46e5' : '#e2e8f0'),
+                        borderRadius: 10,
+                        hoverBackgroundColor: '#4338ca'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { borderDash: [5, 5], color: '#f1f5f9' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+                    }
+                }
+            });
+
+            if (outcomeChartInstance) outcomeChartInstance.destroy();
+            outcomeChartInstance = new Chart(ctxOutcome, {
+                type: 'doughnut',
+                data: {
+                    labels: ['เสียชีวิต', 'กลับบ้าน', 'Admit', 'ส่งต่อ'],
+                    datasets: [{
+                        data: [stats.death, stats.home, stats.admit, stats.refer],
+                        backgroundColor: ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { family: 'Kanit', size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.tab-item').forEach(btn => {
+                btn.classList.toggle('tab-active', btn.getAttribute('data-date') === view);
+            });
+            renderView();
+        }
+
+        function toggleLoading(show) {
+            document.getElementById('loading').classList.toggle('hidden', !show);
+        }
+
+        // --- Event Listeners ---
+        
+        document.getElementById('refreshBtn').onclick = fetchData;
+        
+        document.getElementById('tableSearch').oninput = (e) => {
+            searchQuery = e.target.value;
+            renderTable();
+        };
+
+        window.onload = () => {
+            initTabs();
+            fetchData();
+        };
+    </script>
+</body>
+</html>
